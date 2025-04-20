@@ -1,0 +1,12 @@
+{
+    "mcpServers": {
+      "local-file-search-mcp": {
+        "url": "http://localhost:8000/mcp",
+        "alwaysAllow": [
+          "search_files"
+        ],
+        "disabled": false
+      }
+    }
+  }
+  
