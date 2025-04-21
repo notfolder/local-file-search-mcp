@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "local-file-search-mcp": {
+    "search_local_files-mcp": {
       "url": "http://localhost:8000/sse",
       "alwaysAllow": [
         "search_local_files"

@@ -2,8 +2,6 @@ from mcp.server.fastmcp import FastMCP
 import win32com.client
 from typing import Optional
 from datetime import datetime
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
 
 mcp = FastMCP("local-file-search")
 
@@ -20,8 +18,8 @@ def search_local_files(
     conn.Open("Provider=Search.CollatorDSO;Extended Properties='Application=Windows';")
 
     conditions = [f"CONTAINS('{query}')"]
-    # base_path = "C:\\Users\\%USERNAME%\\Documents"
-    # conditions.append(f"System.ItemPathDisplay LIKE '{base_path}%'")
+    # base_path = 'C:/Users/' + win32com.client.Dispatch("WScript.Network").UserName + '/Documents'
+    # conditions.append(f"SCOPE='file:///{base_path}'")
 
     if extension:
         conditions.append(f"System.FileExtension = '{extension}'")
