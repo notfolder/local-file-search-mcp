@@ -31,7 +31,26 @@ def search_local_files(
     min_size_kb: Optional[int] = None,
     max_size_kb: Optional[int] = None
 ) -> str:
-    """Search indexed files on Windows or Mac. Optionally filter by file extension, modified date, and file size range (KB)."""
+    """
+    This function allows you to search for files in the local file system.
+    Search for files in the system index based on content and various criteria.
+    for files containing specific text content. The search can be refined using multiple filtering options.
+
+    Args:
+        query (str): Text to search for within file contents
+        extension (Optional[str]): Filter by file extension without dot (e.g., "pdf", "txt")
+        modified_after (Optional[str]): Filter files modified after this date (ISO 8601 format, e.g., "2024-01-01T00:00:00")
+        min_size_kb (Optional[int]): Minimum file size in kilobytes
+        max_size_kb (Optional[int]): Maximum file size in kilobytes
+
+    Returns:
+        str: A newline-separated list of found files in format "filename - path",
+             or "No matching files found." if no results
+
+    Examples:
+        >>> search_local_files("report", extension="pdf", modified_after="2024-01-01T00:00:00", min_size_kb=100)
+        "report.pdf - /Users/username/Documents/report.pdf"
+    """
     
     if system == 'Windows':
         return search_local_files_windows(query, extension, modified_after, min_size_kb, max_size_kb)
@@ -91,7 +110,7 @@ def search_local_files_mac(
                 
             name = os.path.basename(path)
             kind = item.valueForAttribute_('kMDItemKind') or "Unknown"
-            filtered_files.append(f"{name} ({kind}) - file://{path}")
+            filtered_files.append(f"{name} ({kind}) - {path}")
         except OSError:
             continue
     
@@ -191,7 +210,25 @@ def read_ppt_file(file_path: str) -> str:
 
 @mcp.tool()
 def local_read_file(file_path: str)-> str:
-    """オフィスファイルをPythonライブラリで読み取る"""
+    """Read and extract text content from various file types including Office documents.
+
+    This function attempts to read the content of a file, first trying as a text file,
+    then using specialized libraries for Office documents (Word, Excel, PowerPoint).
+
+    Args:
+        file_path (str): Full path to the file to be read
+
+    Returns:
+        str: Text content of the file if successful,
+             Error message starting with '[ERROR]' if reading fails,
+             '[SKIP]' message for unsupported file types
+
+    Examples:
+        >>> local_read_file("/path/to/document.docx")
+        "Content of the Word document..."
+        >>> local_read_file("/path/to/unsupported.xyz")
+        "[SKIP] Unsupported file type: .xyz"
+    """
     ext = os.path.splitext(file_path)[1].lower()
 
     # まずテキストファイルとして試みる
