@@ -5,10 +5,8 @@ import os
 from Foundation import (
     NSMetadataQuery,
     NSPredicate,
-    NSNotificationCenter,
     NSRunLoop,
     NSDate,
-    NSDefaultRunLoopMode
 )
 import time
 import platform
