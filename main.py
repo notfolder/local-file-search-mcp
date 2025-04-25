@@ -2,11 +2,98 @@ from mcp.server.fastmcp import FastMCP
 import win32com.client
 from typing import Optional
 from datetime import datetime
+import os
+import win32com.client
+
 
 mcp = FastMCP("local-file-search")
 
 @mcp.tool()
 def search_local_files(
+    query: str,
+    extension: Optional[str] = None,
+    modified_after: Optional[str] = None,
+    min_size_kb: Optional[int] = None,
+    max_size_kb: Optional[int] = None
+) -> str:
+    """Search indexed files on Windows or Mac. Optionally filter by file extension, modified date, and file size range (KB)."""
+    import platform
+    system = platform.system()
+    
+    if system == 'Windows':
+        return search_local_files_windows(query, extension, modified_after, min_size_kb, max_size_kb)
+    elif system == 'Darwin':  # macOS
+        return search_local_files_mac(query, extension, modified_after, min_size_kb, max_size_kb)
+    else:
+        return "Unsupported operating system"
+
+def search_local_files_mac(
+    query: str,
+    extension: Optional[str] = None,
+    modified_after: Optional[str] = None,
+    min_size_kb: Optional[int] = None,
+    max_size_kb: Optional[int] = None
+) -> str:
+    """Search files on macOS using MDQuery. Optionally filter by file extension, modified date, and file size range."""
+    from Foundation import NSDate, NSTimeInterval
+    from CoreServices import (
+        MDQueryCreate,
+        MDQueryExecute,
+        MDQueryGetAttributeValueAtIndex,
+        kMDItemPath,
+        kMDItemDisplayName,
+    )
+    import time
+
+    # MDQueryのクエリ文字列を構築
+    query_parts = [f'kMDItemTextContent == "*{query}*"wc']
+    
+    if extension:
+        query_parts.append(f'kMDItemFSName == "*.{extension}"')
+    
+    if modified_after:
+        try:
+            dt = datetime.fromisoformat(modified_after)
+            timestamp = time.mktime(dt.timetuple())
+            date = NSDate.dateWithTimeIntervalSince1970_(timestamp)
+            query_parts.append(f'kMDItemFSContentChangeDate >= $time')
+        except ValueError:
+            return "Invalid date format. Use ISO 8601 (e.g., 2024-01-01T00:00:00)"
+
+    # クエリの作成と実行
+    query_string = ' && '.join(query_parts)
+    mdquery = MDQueryCreate(None, query_string, None, None)
+    
+    if not mdquery:
+        return "Failed to create search query"
+
+    MDQueryExecute(mdquery, 0)
+    
+    # 結果の取得とフィルタリング
+    filtered_files = []
+    count = mdquery.resultCount()
+    
+    for i in range(count):
+        path = MDQueryGetAttributeValueAtIndex(mdquery, kMDItemPath, i)
+        if not path:
+            continue
+            
+        try:
+            size_kb = os.path.getsize(path) / 1024
+            if min_size_kb and size_kb < min_size_kb:
+                continue
+            if max_size_kb and size_kb > max_size_kb:
+                continue
+                
+            name = os.path.basename(path)
+            filtered_files.append(f"{name} - file://{path}")
+        except OSError:
+            continue
+    
+    return '\n'.join(filtered_files) if filtered_files else "No matching files found."
+
+
+def search_local_files_windows(
     query: str,
     extension: Optional[str] = None,
     modified_after: Optional[str] = None,
@@ -54,10 +141,6 @@ def search_local_files(
     conn.Close()
 
     return "\n".join(results) if results else "No matching files found."
-
-
-import os
-import win32com.client
 
 
 def read_word_com(file_path):
