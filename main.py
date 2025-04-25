@@ -2,13 +2,13 @@ from mcp.server.fastmcp import FastMCP
 from typing import Optional
 from datetime import datetime
 import os
-import win32com.client
-from Foundation import NSDate
-from CoreServices import (
-    MDQueryCreate,
-    MDQueryExecute,
-    MDQueryGetAttributeValueAtIndex,
-    kMDItemPath,    
+from Foundation import (
+    NSMetadataQuery,
+    NSPredicate,
+    NSNotificationCenter,
+    NSRunLoop,
+    NSDate,
+    NSDefaultRunLoopMode
 )
 import time
 import platform
@@ -16,6 +16,10 @@ import platform
 from docx import Document
 from openpyxl import load_workbook
 from pptx import Presentation
+
+system = platform.system()
+if system == 'Windows':
+    import win32com.client
 
 mcp = FastMCP("local-file-search")
 
@@ -28,7 +32,6 @@ def search_local_files(
     max_size_kb: Optional[int] = None
 ) -> str:
     """Search indexed files on Windows or Mac. Optionally filter by file extension, modified date, and file size range (KB)."""
-    system = platform.system()
     
     if system == 'Windows':
         return search_local_files_windows(query, extension, modified_after, min_size_kb, max_size_kb)
@@ -44,37 +47,38 @@ def search_local_files_mac(
     min_size_kb: Optional[int] = None,
     max_size_kb: Optional[int] = None
 ) -> str:
-    """Search files on macOS using MDQuery. Optionally filter by file extension, modified date, and file size range."""
-    # MDQueryのクエリ文字列を構築
-    query_parts = [f'kMDItemTextContent == "*{query}*"wc']
+    """Search files on macOS using NSMetadataQuery. Optionally filter by file extension, modified date, and file size range."""
+    # クエリの構築
+    predicate_parts = [f'kMDItemTextContent LIKE[c] "*{query}*"']
     
     if extension:
-        query_parts.append(f'kMDItemFSName == "*.{extension}"')
+        predicate_parts.append(f'kMDItemFSName LIKE[c] "*.{extension}"')
     
     if modified_after:
         try:
             dt = datetime.fromisoformat(modified_after)
             timestamp = time.mktime(dt.timetuple())
             date = NSDate.dateWithTimeIntervalSince1970_(timestamp)
-            query_parts.append(f'kMDItemFSContentChangeDate >= $time')
+            predicate_parts.append(f'kMDItemFSContentChangeDate >= $time')
         except ValueError:
             return "Invalid date format. Use ISO 8601 (e.g., 2024-01-01T00:00:00)"
 
-    # クエリの作成と実行
-    query_string = ' && '.join(query_parts)
-    mdquery = MDQueryCreate(None, query_string, None, None)
+    # NSMetadataQueryの設定
+    mdquery = NSMetadataQuery.alloc().init()
+    predicate = NSPredicate.predicateWithFormat_(' AND '.join(predicate_parts))
+    mdquery.setPredicate_(predicate)
     
-    if not mdquery:
-        return "Failed to create search query"
-
-    MDQueryExecute(mdquery, 0)
+    # 検索開始
+    mdquery.startQuery()
+    
+    # 結果が得られるまで待機
+    NSRunLoop.currentRunLoop().runUntilDate_(NSDate.dateWithTimeIntervalSinceNow_(3.0))
+    mdquery.stopQuery()
     
     # 結果の取得とフィルタリング
     filtered_files = []
-    count = mdquery.resultCount()
-    
-    for i in range(count):
-        path = MDQueryGetAttributeValueAtIndex(mdquery, kMDItemPath, i)
+    for item in mdquery.results():
+        path = item.valueForAttribute_('kMDItemPath')
         if not path:
             continue
             
@@ -86,7 +90,8 @@ def search_local_files_mac(
                 continue
                 
             name = os.path.basename(path)
-            filtered_files.append(f"{name} - file://{path}")
+            kind = item.valueForAttribute_('kMDItemKind') or "Unknown"
+            filtered_files.append(f"{name} ({kind}) - file://{path}")
         except OSError:
             continue
     
@@ -184,7 +189,8 @@ def read_ppt_file(file_path: str) -> str:
     except Exception as e:
         return f"[ERROR] Failed to read PowerPoint file: {e}"
 
-def read_office_file_com(file_path: str) -> str:
+@mcp.tool()
+def local_read_file(file_path: str)-> str:
     """オフィスファイルをPythonライブラリで読み取る"""
     ext = os.path.splitext(file_path)[1].lower()
 
@@ -208,10 +214,6 @@ def read_office_file_com(file_path: str) -> str:
     except Exception as e:
         return f"[ERROR] Failed to read {file_path}: {e}"
 
-@mcp.tool()
-def local_read_file(path: str)-> str:
-    """Read a file."""
-    return read_office_file_com(path)
 
 if __name__ == "__main__":
     mcp.run(transport="sse")
