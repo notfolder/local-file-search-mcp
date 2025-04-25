@@ -1,10 +1,21 @@
 from mcp.server.fastmcp import FastMCP
-import win32com.client
 from typing import Optional
 from datetime import datetime
 import os
 import win32com.client
-
+from Foundation import NSDate
+from CoreServices import (
+    MDQueryCreate,
+    MDQueryExecute,
+    MDQueryGetAttributeValueAtIndex,
+    kMDItemPath,    
+)
+import time
+import platform
+# オフィスファイル用のライブラリ
+from docx import Document
+from openpyxl import load_workbook
+from pptx import Presentation
 
 mcp = FastMCP("local-file-search")
 
@@ -17,7 +28,6 @@ def search_local_files(
     max_size_kb: Optional[int] = None
 ) -> str:
     """Search indexed files on Windows or Mac. Optionally filter by file extension, modified date, and file size range (KB)."""
-    import platform
     system = platform.system()
     
     if system == 'Windows':
@@ -35,16 +45,6 @@ def search_local_files_mac(
     max_size_kb: Optional[int] = None
 ) -> str:
     """Search files on macOS using MDQuery. Optionally filter by file extension, modified date, and file size range."""
-    from Foundation import NSDate, NSTimeInterval
-    from CoreServices import (
-        MDQueryCreate,
-        MDQueryExecute,
-        MDQueryGetAttributeValueAtIndex,
-        kMDItemPath,
-        kMDItemDisplayName,
-    )
-    import time
-
     # MDQueryのクエリ文字列を構築
     query_parts = [f'kMDItemTextContent == "*{query}*"wc']
     
@@ -143,51 +143,49 @@ def search_local_files_windows(
     return "\n".join(results) if results else "No matching files found."
 
 
-def read_word_com(file_path):
-    word = win32com.client.Dispatch("Word.Application")
-    word.Visible = False
+def read_word_file(file_path: str) -> str:
+    """Wordファイルをpython-docxで読み取る"""
     try:
-        doc = word.Documents.Open(file_path, ReadOnly=True)
-        text = doc.Content.Text
-        doc.Close(False)
-        return text
-    finally:
-        word.Quit()
+        doc = Document(file_path)
+        return '\n'.join([paragraph.text for paragraph in doc.paragraphs])
+    except ModuleNotFoundError:
+        return "[ERROR] python-docx is not installed. Run: pip install python-docx"
+    except Exception as e:
+        return f"[ERROR] Failed to read Word file: {e}"
 
-
-def read_excel_com(file_path):
-    excel = win32com.client.Dispatch("Excel.Application")
-    excel.Visible = False
+def read_excel_file(file_path: str) -> str:
+    """Excelファイルをopenpyxlで読み取る"""
     try:
-        wb = excel.Workbooks.Open(file_path)
+        wb = load_workbook(file_path, read_only=True, data_only=True)
         text = []
-        for sheet in wb.Sheets:
-            for row in sheet.UsedRange.Rows:
-                row_values = [str(cell.Value) if cell.Value is not None else '' for cell in row.Columns]
+        for sheet in wb.sheetnames:
+            ws = wb[sheet]
+            for row in ws.rows:
+                row_values = [str(cell.value) if cell.value is not None else '' for cell in row]
                 text.append('\t'.join(row_values))
-        wb.Close(False)
         return '\n'.join(text)
-    finally:
-        excel.Quit()
+    except ModuleNotFoundError:
+        return "[ERROR] openpyxl is not installed. Run: pip install openpyxl"
+    except Exception as e:
+        return f"[ERROR] Failed to read Excel file: {e}"
 
-
-def read_ppt_com(file_path):
-    ppt = win32com.client.Dispatch("PowerPoint.Application")
-    ppt.Visible = False
+def read_ppt_file(file_path: str) -> str:
+    """PowerPointファイルをpython-pptxで読み取る"""
     try:
-        presentation = ppt.Presentations.Open(file_path, WithWindow=False)
+        prs = Presentation(file_path)
         text = []
-        for slide in presentation.Slides:
-            for shape in slide.Shapes:
-                if shape.HasTextFrame and shape.TextFrame.HasText:
-                    text.append(shape.TextFrame.TextRange.Text)
-        presentation.Close()
+        for slide in prs.slides:
+            for shape in slide.shapes:
+                if hasattr(shape, "text"):
+                    text.append(shape.text)
         return '\n'.join(text)
-    finally:
-        ppt.Quit()
+    except ModuleNotFoundError:
+        return "[ERROR] python-pptx is not installed. Run: pip install python-pptx"
+    except Exception as e:
+        return f"[ERROR] Failed to read PowerPoint file: {e}"
 
-
-def read_office_file_com(file_path):
+def read_office_file_com(file_path: str) -> str:
+    """オフィスファイルをPythonライブラリで読み取る"""
     ext = os.path.splitext(file_path)[1].lower()
 
     # まずテキストファイルとして試みる
@@ -195,16 +193,16 @@ def read_office_file_com(file_path):
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
     except:
-        pass  # テキストとして読めなかったらCOMに切り替え
+        pass
 
-    # COMで読み取りを試行
+    # Pythonライブラリで読み取りを試行
     try:
         if ext in [".doc", ".docx"]:
-            return read_word_com(file_path)
+            return read_word_file(file_path)
         elif ext in [".xls", ".xlsx"]:
-            return read_excel_com(file_path)
+            return read_excel_file(file_path)
         elif ext in [".ppt", ".pptx"]:
-            return read_ppt_com(file_path)
+            return read_ppt_file(file_path)
         else:
             return f"[SKIP] Unsupported file type: {ext}"
     except Exception as e:
