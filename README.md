@@ -37,13 +37,19 @@ conda activate mcp-file-search-env
 mcpo --port 8000 --host 127.0.0.1 --config ./config.json --api-key "top-secret"
 ```
 
-※いずれDocker化もしたいと思っています！→バリバリOSのインデックスサービス使ってるから、Docker化は絶対ムリでした。。。
+下記コマンドでアプリ化中。まだうごきません。。。
+```bash
+$ pyinstaller mcpo_cli.py main.py --add-data config.json:. --add-data main.py:. --onefile --console -n local-file-search-mcp
+```
+⚠️プロセスがkillできなくなるので注意！
+※listenするポートやbindするホスト名はmcpo_cli.pyの内容を変更して下さい。
 
 
 ### 3. openwebuiにMCPサーバーを設定
 - 「管理者設定」→「ツール」→「＋」をクリック
 - 以下を設定します：
   - URL: `http://host.docker.internal:8000/search_local_files`
+  - Auth: Bearerとして`top-secret`を指定
   - Visibility: `Public`
 
 

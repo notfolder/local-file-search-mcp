@@ -1,5 +1,18 @@
+import os
 import sys
+import json
 import mcpo
+
+def resource_path(relative_path):
+    """実行ファイルまたはスクリプトからの相対パスを解決する"""
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstallerでビルドされた実行ファイル内の場合
+        base_path = sys._MEIPASS
+    else:
+        # 通常のPythonスクリプト実行時
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 def main():
     # コマンドライン引数をそのままmcpo.mainに渡す
     argv = sys.argv[1:]
@@ -20,7 +33,27 @@ def main():
     
     # configキーをconfig_pathに変換
     if 'config' in args_dict:
-        args_dict['config_path'] = args_dict.pop('config')
+        config_path = resource_path(args_dict.pop('config'))
+        args_dict['config_path'] = config_path
+        
+        # configファイルを読み込む
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        
+        # mcpServers内のsearch_local_filesのargs配列を変換
+        if 'mcpServers' in config:
+            for server in config['mcpServers']:
+                if 'search_local_files' in server:
+                    if 'args' in server['search_local_files']:
+                        server['search_local_files']['args'] = [
+                            resource_path(arg) if arg == 'main.py' else arg
+                            for arg in server['search_local_files']['args']
+                        ]
+        
+        # 変更した設定を保存
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(config, f, indent=2)
+
     # portについては、int型に変換
     if 'port' in args_dict:
         args_dict['port'] = int(args_dict['port'])
