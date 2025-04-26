@@ -29,6 +29,7 @@ docker run -d -p 8080:8080 --add-host=host.docker.internal:host-gateway -v open-
 ### 2. 拙作MCPサーバーをmcpo経由で起動
 次にMCPサーバーを立ち上げます。
 
+⚠️ **注意**： Windowsの場合env.ymlのpyobjc-*の行を消してください
 ```bash
 git clone https://github.com/notfolder/local-file-search-mcp.git
 cd local-file-search-mcp
