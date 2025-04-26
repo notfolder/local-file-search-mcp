@@ -14,7 +14,7 @@ openwebuiと組み合わせて、**ローカルファイルをアップロード
 - ファイルアップロード不要。ローカルインデックス活用
 
 
-## 手順
+## 手順(openwebuiを使う場合)
 
 ### 1. openwebuiをDockerで起動
 まずはopenwebuiをDockerで立ち上げます。
@@ -76,6 +76,31 @@ textファイルだけでなく、Word・Excel・PowerPointファイルにも対
 
 
 ---
+
+## 手順(mcp serverとして使う場合)
+
+## 1. 起動
+
+- stdioの場合  
+```bash
+$ python main.py
+```
+
+- sseでローカルサーバーを立てる場合
+```bash
+$ python main.py --transport sse
+```
+
+## 2. 設定
+
+- stdioの場合  
+```mcp_setting.json```を参考にmcpクライアントに設定する。
+
+- sseでローカルサーバーを立てる場合
+```mcp_setting_sse.json```を参考にmcpクライアントに設定する。
+
+## 3. 後はmcpクライアントで有効にして使うだけ
+
 
 ## 番外編：開発の裏話
 このツールの開発には**GitHub Copilot**をフル活用しました！

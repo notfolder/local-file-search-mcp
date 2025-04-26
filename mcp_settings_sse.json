@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "search_local_files-mcp": {
+      "url": "http://localhost:8000/sse",
+      "alwaysAllow": [
+        "search_local_files","local_read_file"
+      ],
+      "disabled": false
+    }
+  }
+}

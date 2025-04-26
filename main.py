@@ -5,6 +5,7 @@ from datetime import datetime
 import os
 import time
 import platform
+import argparse
 # オフィスファイル用のライブラリ
 from docx import Document
 from openpyxl import load_workbook
@@ -272,5 +273,11 @@ def local_read_file(file_path: str)-> str:
 
 
 if __name__ == "__main__":
-    # mcp.run()
-    mcp.run(transport="sse")
+    parser = argparse.ArgumentParser(description='MCP Local File Search Server')
+    parser.add_argument('--transport', 
+                      default='stdio',
+                      choices=['stdio', 'sse'],
+                      help='Transport type (default: stdio)')
+    args = parser.parse_args()
+    
+    mcp.run(transport=args.transport)
