@@ -3,12 +3,6 @@ import logging
 from typing import Optional
 from datetime import datetime
 import os
-from Foundation import (
-    NSMetadataQuery,
-    NSPredicate,
-    NSRunLoop,
-    NSDate,
-)
 import time
 import platform
 # オフィスファイル用のライブラリ
@@ -19,6 +13,14 @@ from pptx import Presentation
 system = platform.system()
 if system == 'Windows':
     import win32com.client
+
+if system == 'Darwin':  # macOS
+    from Foundation import (
+        NSMetadataQuery,
+        NSPredicate,
+        NSRunLoop,
+        NSDate,
+    )
 
 mcp = FastMCP("local-file-search")
 
@@ -270,5 +272,5 @@ def local_read_file(file_path: str)-> str:
 
 
 if __name__ == "__main__":
-    mcp.run()
-    # mcp.run(transport="sse")
+    # mcp.run()
+    mcp.run(transport="sse")
