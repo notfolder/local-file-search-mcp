@@ -146,8 +146,8 @@ def search_local_files_windows(
     conn.Open("Provider=Search.CollatorDSO;Extended Properties='Application=Windows';")
 
     conditions = [f"CONTAINS('{query}')"]
-    # base_path = 'C:/Users/' + win32com.client.Dispatch("WScript.Network").UserName + '/Documents'
-    # conditions.append(f"SCOPE='file:///{base_path}'")
+    base_path = 'C:/Users/' + win32com.client.Dispatch("WScript.Network").UserName + '/Documents'
+    conditions.append(f"SCOPE='file:{base_path}'")
 
     if extension:
         conditions.append(f"System.FileExtension = '{extension}'")
