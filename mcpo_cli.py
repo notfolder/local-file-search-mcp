@@ -42,13 +42,13 @@ def main():
         
         # mcpServers内のsearch_local_filesのargs配列を変換
         if 'mcpServers' in config:
-            for server in config['mcpServers']:
-                if 'search_local_files' in server:
-                    if 'args' in server['search_local_files']:
-                        server['search_local_files']['args'] = [
-                            resource_path(arg) if arg == 'main.py' else arg
-                            for arg in server['search_local_files']['args']
-                        ]
+            server = config['mcpServers']
+            if 'search_local_files' in server.keys():
+                if 'args' in server['search_local_files'].keys():
+                    server['search_local_files']['args'] = [
+                        resource_path(arg) if arg == 'main.py' else arg
+                        for arg in server['search_local_files']['args']
+                    ]
         
         # 変更した設定を保存
         with open(config_path, 'w', encoding='utf-8') as f:

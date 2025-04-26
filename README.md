@@ -37,11 +37,10 @@ conda activate mcp-file-search-env
 mcpo --port 8000 --host 127.0.0.1 --config ./config.json --api-key "top-secret"
 ```
 
-下記コマンドでアプリ化中。まだうごきません。。。
+下記コマンドでアプリ化できます。
 ```bash
 $ pyinstaller mcpo_cli.py main.py --add-data config.json:. --add-data main.py:. --onefile --console -n local-file-search-mcp
 ```
-⚠️プロセスがkillできなくなるので注意！
 ※listenするポートやbindするホスト名はmcpo_cli.pyの内容を変更して下さい。
 
 
