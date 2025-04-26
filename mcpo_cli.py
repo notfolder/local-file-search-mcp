@@ -8,7 +8,7 @@ def main():
         "--port": "8000",
         "--host": "127.0.0.1",
         "--config": "./config.json",
-        "--api-key": '"top-secret"',
+        "--api-key": 'top-secret',
     }
     for arg, value in default_args.items():
         if arg not in argv:
