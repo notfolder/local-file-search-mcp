@@ -1,0 +1,13 @@
+{
+    "mcpServers": {
+        "search_local_files": {
+            "command": "python",
+            "args": ["main.py"],
+            "alwaysAllow": [
+                "search_local_files",
+                "local_read_file"
+            ],
+            "disabled": true
+        }
+    }
+}

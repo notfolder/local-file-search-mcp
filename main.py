@@ -251,4 +251,5 @@ def local_read_file(file_path: str)-> str:
 
 
 if __name__ == "__main__":
-    mcp.run(transport="sse")
+    mcp.run()
+    # mcp.run(transport="sse")
