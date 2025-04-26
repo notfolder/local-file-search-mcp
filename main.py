@@ -74,13 +74,12 @@ def search_local_files_mac(
     max_size_kb: Optional[int] = None
 ) -> str:
     # Documents フォルダのパスを取得
-    # documents_path = os.path.expanduser('~/Documents')
-    # logger.debug(f"Documents path: {documents_path}")
+    documents_path = os.path.expanduser('~/Documents')
+    logger.debug(f"Documents path: {documents_path}")
     
     # クエリの構築
     predicate_parts = [
-        f'kMDItemTextContent CONTAINS[cd] "{query}"',
-        # f'kMDItemPath BEGINSWITH "{documents_path}"'
+        f'kMDItemTextContent CONTAINS[cd] "{query}"'
     ]
     
     logger.debug(f"Predicate parts: {predicate_parts}")
@@ -99,6 +98,7 @@ def search_local_files_mac(
 
     # NSMetadataQueryの設定
     mdquery = NSMetadataQuery.alloc().init()
+    mdquery.setSearchScopes_([documents_path])  # 検索スコープを設定
     predicate = NSPredicate.predicateWithFormat_(' AND '.join(predicate_parts))
     logger.debug(f"Final predicate: {predicate}")
     mdquery.setPredicate_(predicate)
