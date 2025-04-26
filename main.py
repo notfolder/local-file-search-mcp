@@ -1,4 +1,5 @@
 from mcp.server.fastmcp import FastMCP
+import logging
 from typing import Optional
 from datetime import datetime
 import os
@@ -20,6 +21,14 @@ if system == 'Windows':
     import win32com.client
 
 mcp = FastMCP("local-file-search")
+
+# ロガーの設定
+logger = logging.getLogger(__name__)
+# logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+
 
 @mcp.tool()
 def search_local_files(
@@ -64,13 +73,21 @@ def search_local_files_mac(
     min_size_kb: Optional[int] = None,
     max_size_kb: Optional[int] = None
 ) -> str:
-    """Search files on macOS using NSMetadataQuery. Optionally filter by file extension, modified date, and file size range."""
+    # Documents フォルダのパスを取得
+    # documents_path = os.path.expanduser('~/Documents')
+    # logger.debug(f"Documents path: {documents_path}")
+    
     # クエリの構築
-    predicate_parts = [f'kMDItemTextContent LIKE[c] "*{query}*"']
+    predicate_parts = [
+        f'kMDItemTextContent CONTAINS[cd] "{query}"',
+        # f'kMDItemPath BEGINSWITH "{documents_path}"'
+    ]
+    
+    logger.debug(f"Predicate parts: {predicate_parts}")
     
     if extension:
-        predicate_parts.append(f'kMDItemFSName LIKE[c] "*.{extension}"')
-    
+        predicate_parts.append(f'kMDItemFSName LIKE[cd] "*.{extension}"')
+
     if modified_after:
         try:
             dt = datetime.fromisoformat(modified_after)
@@ -83,6 +100,7 @@ def search_local_files_mac(
     # NSMetadataQueryの設定
     mdquery = NSMetadataQuery.alloc().init()
     predicate = NSPredicate.predicateWithFormat_(' AND '.join(predicate_parts))
+    logger.debug(f"Final predicate: {predicate}")
     mdquery.setPredicate_(predicate)
     
     # 検索開始
@@ -111,6 +129,7 @@ def search_local_files_mac(
             filtered_files.append(f"{name} ({kind}) - {path}")
         except OSError:
             continue
+    logger.debug(f"Filtered files: {filtered_files}")
     
     return '\n'.join(filtered_files) if filtered_files else "No matching files found."
 
